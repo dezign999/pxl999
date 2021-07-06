@@ -5,7 +5,7 @@ Pxl999 is a chunky pixel watch face for SQFMI's Watchy. This watch face features
 
 When internet access is not available, the RTC will be used for ambient temperature, and is indicated by a microchip as the weather icon.
 
-Please make sure to personalize your settings in Watchy_Base.h with your locale, Open Weather Map API Key, NTP servers and tinmezones. You can get your free Openweathermap api key here: https://openweathermap.org/appid
+Please make sure to personalize your settings in Watchy_Base.h with your locale, Open Weather Map API Key, NTP servers and timezones. You can get your free Openweathermap api key here: https://openweathermap.org/appid
 
 This watch face was made using the free Arduino IDE, Photoshop CC, image2ccp, Glypher Studio (font creation), Cloud Convert (otf > ttf), and truetype2gfx.
 
