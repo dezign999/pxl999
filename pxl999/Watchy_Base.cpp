@@ -234,7 +234,7 @@ weatherData WatchyBase::getWeather(){
         #ifdef CITY_ID
             String weatherQueryURL = String(URL) + String("?id=")+ String(CITY_ID) + String("&units=") + String(TEMP) + String("&appid=") + String(APIKEY);
         #else            
-            String weatherQueryURL = String(URL) + String(CITY) + String(",") + String(COUNTRY) + String("&units=") + String(TEMP) + String("&appid=") + String(APIKEY);
+            String weatherQueryURL = String(URL) + String("?q=") + String(CITY) + String(",") + String(COUNTRY) + String("&units=") + String(TEMP) + String("&appid=") + String(APIKEY);
         #endif            
             http.begin(weatherQueryURL.c_str());
             int httpResponseCode = http.GET();
