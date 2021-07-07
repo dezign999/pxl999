@@ -19,14 +19,14 @@ extern RTC_DATA_ATTR bool debugger;
 #define CITY "WADING+RIVER" //if your city name has a space, replace with '+'
 #define COUNTRY "US"
 #define APIKEY "f058fe1cad2afe8e2ddc5d063a64cecb" //use your own API key (this is SQFMI'S) :)
-#define URL "http://api.openweathermap.org/data/2.5/weather?q="
+#define URL "http://api.openweathermap.org/data/2.5/weather"
 #define TEMP "imperial" //use "imperial" for Fahrenheit or "metric" for Celcius
 
-//If your city name isn't very unique, you can use its ID insteadWhen you look up a city on openweathermap.org, 
+//If your city name isn't very unique, you can use its ID instead. When you look up a city on openweathermap.org, 
 //it'll take you to a page like "https://openweathermap.org/city/4574324"
 //copy those digits on the end and put them into CITY_ID
 
-//#define CITY_ID "5378538"
+//#define CITY_ID "5143022"
 
 //NTP Syncing - updates your time twice a day to fix any drifting
 //Get your timezone from: https://github.com/nayarsystems/posix_tz_db/blob/master/zones.json
