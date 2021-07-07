@@ -231,11 +231,12 @@ weatherData WatchyBase::getWeather(){
         if(!runOnce && connectWiFi()){//Use Weather API for live data if WiFi is connected
             HTTPClient http;
             http.setConnectTimeout(3000);//3 second max timeout
-#ifdef CITY_ID
+        #ifdef CITY_ID
             String weatherQueryURL = String(URL) + String("?id=")+ String(CITY_ID) + String("&units=") + String(TEMP) + String("&appid=") + String(APIKEY);
-#else            
-            String weatherQueryURL = String(URL) + String("?q=") + String(CITY) + String(",") + String(COUNTRY) + String("&units=") + String(TEMP) + String("&appid=") + String(APIKEY);
-#endif            http.begin(weatherQueryURL.c_str());
+        #else            
+            String weatherQueryURL = String(URL) + String(CITY) + String(",") + String(COUNTRY) + String("&units=") + String(TEMP) + String("&appid=") + String(APIKEY);
+        #endif            
+            http.begin(weatherQueryURL.c_str());
             int httpResponseCode = http.GET();
             if(httpResponseCode == 200) {
                 String payload = http.getString();
