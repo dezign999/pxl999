@@ -36,8 +36,11 @@ extern RTC_DATA_ATTR bool debugger;
 #define NTP_SERVER_3 "0.ie.pool.ntp.org"
 
 // Btn definitions
+#define IS_DOUBLE_TAP       (wakeupBit & ACC_INT_MASK && guiState == WATCHFACE_STATE)
+#define IS_BTN_RIGHT_UP     (wakeupBit & UP_BTN_MASK && guiState == WATCHFACE_STATE)
 #define IS_BTN_LEFT_UP      (wakeupBit & BACK_BTN_MASK && guiState == WATCHFACE_STATE)
-#define EXT_INT_MASK        BACK_BTN_MASK
+#define IS_BTN_RIGHT_DOWN   (wakeupBit & DOWN_BTN_MASK && guiState == WATCHFACE_STATE)
+#define EXT_INT_MASK        MENU_BTN_MASK|BACK_BTN_MASK|UP_BTN_MASK|DOWN_BTN_MASK
 
 class WatchyBase : public Watchy {
     public:
