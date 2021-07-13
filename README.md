@@ -18,7 +18,7 @@ Admittedly, there's quite a bit to configure with this (and future) watch face(s
 ##### API KEY
 In order for the watchy to receive weather upates, you'll need an API Key from [OpenWeatherMap.org](https://openweathermap.org/appid) which is completely free. I've included SQFMI's key which is enabled by default. Using this key is not recommended as it will cease to function when minute/daily limits are reached, or if SQFMI simply deletes it. Add your API Key to the `APIKEY` definition.
 
-#### City Name or Code
+#### City Name or ID
 Weather for your location is limited to one area and is defined by entering your city name where defined in the source code under `CITY`. If your city name is used in other states or provinces, you can also use your city code by looking up a city on openweathermap.org, it'll take you to a page like "https://openweathermap.org/city/4574324". Copy those numbers (ex 4574324) on the end and put them into `CITY_ID` between the quotes. You'll also have to define `COUNTRY` and `TEMP`. `TEMP` is used to determine if Imperial temperature is displayed.
 
 #### Pausing Weather Updates
