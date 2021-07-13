@@ -13,6 +13,7 @@ extern RTC_DATA_ATTR bool runOnce;
 extern RTC_DATA_ATTR bool delayedStart;
 extern RTC_DATA_ATTR bool firstNTP;
 extern RTC_DATA_ATTR bool debugger;
+extern RTC_DATA_ATTR weatherData latestWeather;
 
 //weather api - Update these to match your city/country/api key
 //get your free api key from: https://openweathermap.org/appid

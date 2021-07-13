@@ -16,6 +16,7 @@ class WatchyPXL999 : public WatchyBase{
         void drawWeather();
         void drawCachedWeather();
         void drawWeatherIcon();
+        bool pauseUpdates();
 };
 
 #endif
