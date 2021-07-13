@@ -24,7 +24,7 @@ Weather for your location is limited to one area and is defined by entering your
 #### Pausing Weather Updates
 It's possible to pause weather updates when the watch is not in use, i.e. when you're sleeping. By default, its set to pause 30 minutes after midnight, and resume updates at 5:30am. These can be changed by modifying the `pauseStart` and `pauseEnd` strings. Setting both strings to the same time will disable the pause updates feature. Pause start and end times must be written in the 24 hour format.
 
-When updates are paused, the weather icon will be represented by a sleepint RTC icon and ambient temperature will be used instead of live weather.
+When updates are paused, the weather icon will be represented by a sleeping RTC icon and ambient temperature will be used instead of live weather.
 
 ## NTP
 #### Timezone
