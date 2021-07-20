@@ -7,6 +7,8 @@
 #include "timeLG42pt7b.h"
 #include "icons.h"
 
+//extern RTC_DATA_ATTR bool delayedStart;
+
 class WatchyPXL999 : public WatchyBase{
     public:
         WatchyPXL999();

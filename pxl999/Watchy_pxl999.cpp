@@ -4,21 +4,25 @@
 #define DATE_FONT timeLGMono20pt7b
 #define SMALL_TEXT smTextMono8pt7b
 
-RTC_DATA_ATTR int16_t weatherConditionCode;
-RTC_DATA_ATTR int8_t temperature;
+
 RTC_DATA_ATTR bool showCached = false;
 RTC_DATA_ATTR bool pauseEnabled = false;
+RTC_DATA_ATTR bool delayedStart = false;
+RTC_DATA_ATTR bool runOnce = true;
 
 //Pause weather updates when the watch is not in use to conserve battery life.
 //Time is defined in 24h format. Set both times to "0:00" to disable pausing.
 String pauseStart = "0:30"; //Stops weather updates at 12:30am
-String pauseEnd = "5:30"; //Resumes weather updates at 5:30am
+String pauseEnd = "5:45"; //Resumes weather updates at 5:45am
 
-//for night weather icons ;)
+//Night weather icons ;)
 bool isNight = false;
 
-//time between weather syncs
+//Time between weather syncs in minutes
 #define WEATHER_TIMER 30
+
+//Time between NTP syncs in hours
+#define NTP_TIMER 12
 
 WatchyPXL999::WatchyPXL999() {}
 
@@ -33,6 +37,8 @@ void WatchyPXL999::drawTime() {
 
   display.setFont(&TIME_FONT);
   display.setTextColor(GxEPD_WHITE);
+
+  display.fillRect(11, 27, 128, 124, GxEPD_BLACK); //Redraw Helper
 
   //Hour
   display.setCursor(16, 87);
@@ -49,6 +55,8 @@ void WatchyPXL999::drawDate() {
   String dateStr = String(currentTime.Day);
   dateStr = currentTime.Day < 10 ? "0" + dateStr : dateStr;
 
+  display.fillRect(11, 153, 178, 38, GxEPD_BLACK); //Redraw Helper
+
   display.setFont(&DATE_FONT);
   display.setCursor(16, 184);
   display.print(dateStr);
@@ -63,6 +71,7 @@ void WatchyPXL999::drawDate() {
 
 void WatchyPXL999::drawWeatherIcon() {
 
+  isNight = (currentTime.Hour >= 18 || currentTime.Hour <= 5) ? true : false;
   const unsigned char* weatherIcon;
 
   //https://openweathermap.org/weather-conditions
@@ -87,11 +96,13 @@ void WatchyPXL999::drawWeatherIcon() {
   } else if (weatherConditionCode >= 200) { //Thunderstorm
     weatherIcon = thunderstorm;
   }
+
+  display.fillRect(141, 91, 49, 44, GxEPD_BLACK); //Redraw Helper
   display.drawBitmap(143, 93, weatherIcon, 45, 40, GxEPD_WHITE);
 }
 
 void WatchyPXL999::drawWeather() {
-  if (!pauseUpdates()) {
+  if (!pauseUpdates() && !delayedStart) {
     if (debugger)
       Serial.println("Resuming Updates");
     if (showCached == false) {
@@ -102,27 +113,43 @@ void WatchyPXL999::drawWeather() {
       showCached = false;
     }
   } else {
-    if (debugger)
-      Serial.println("Paused Updates");
-    temperature = RTC.temperature() / 4; //celsius
-    if (strcmp(TEMP, "imperial") == 0) {
-      temperature = temperature * 9. / 5. + 32.; //fahrenheit
-    }
-    if (debugger)
-      Serial.println("RTC Temp: " + String(temperature));
+    temperature = rtcTemp();
     latestWeather.temperature = temperature;
-    weatherConditionCode = 998;
+    weatherConditionCode = (pauseUpdates()) ? 998 : 999;
+    latestWeather.weatherConditionCode = weatherConditionCode;
+    cityNameID = 999;
+    if (debugger) {
+      Serial.println("Paused Updates");
+      Serial.println("RTC Temp - latestWeather.temp: " + String(latestWeather.temperature));
+    }
   }
 
   display.setFont(&SMALL_TEXT);
-  //Get width of text & center it under the weather icon. 166 is the centerpoint of the icon
+  display.fillRect(142, 136, 49, 13, GxEPD_BLACK); //Redraw Helper
+  //Get width of text & center it under the weather icon. 165 is the centerpoint of the icon
   int16_t  x1, y1;
   uint16_t w, h;
   display.getTextBounds(String(temperature) + ".", 45, 13, &x1, &y1, &w, &h);
   display.setCursor(166 - w / 2, 148);
   if (debugger)
-    Serial.println("Current temperature: " + String(temperature));
+    Serial.println("Latest temperature: " + String(temperature));
   display.println(String(temperature) + ".");
+
+  cityName = getCityAbbv();
+  display.fillRect(142, 77, 49, 13, GxEPD_BLACK); //Redraw Helper
+  display.getTextBounds(cityName, 45, 13, &x1, &y1, &w, &h);
+  display.setCursor(165 - w / 2, 87);
+  if (debugger)
+    Serial.println("Current City : " + String(cityName) + " | " + getCityName());
+  display.println(cityName);
+
+  if (debugger) { //show active weather condition code
+    String weathercode = String(weatherConditionCode);
+    display.getTextBounds(weathercode, 45, 13, &x1, &y1, &w, &h);
+    display.setCursor(165 - w / 2, 55);
+    display.println(weathercode);
+  }
+
 }
 
 bool WatchyPXL999::pauseUpdates() {
@@ -163,55 +190,64 @@ bool WatchyPXL999::pauseUpdates() {
 void WatchyPXL999::drawWatchFace() {
 
   display.fillScreen(GxEPD_BLACK);
-
   drawTime();
   drawDate();
 
-  isNight = (currentTime.Hour >= 19 || currentTime.Hour <= 5) ? true : false;
-  if (!pauseUpdates()) {
-    if (delayedStart || currentTime.Minute % WEATHER_TIMER == 0) {
-      if (debugger) {
-        Serial.println("getting new weather");
-        Serial.println("initial runOnce: " + String(runOnce));
-      }
-      if (runOnce) {
-        runOnce = false;
-        delayedStart = false;
-      }
+  if (!pauseUpdates()) { //Check if live updates aren't paused
+
+    if (delayedStart) { //Sync Weather & NTP on second Tick to avoid crashing Watchy on first launch
+      delayedStart = false;
       drawWeather();
-    } else if (!runOnce && !firstNTP) {
+      syncNtpTime();
+      if (debugger) {
+        Serial.println("Delayed Start. Syncing Weather & NTP");
+        Serial.println("initial runOnce: " + String(runOnce));
+        Serial.println("Initial NTP Sync");
+      }
+    }
+
+    if (currentTime.Minute % WEATHER_TIMER == 0 || currentTime.Hour % NTP_TIMER == 0 && currentTime.Minute == 0) { //Check time to sync Weather or NTP
+
+      if (currentTime.Minute % WEATHER_TIMER == 0) { //Sync Weather
+        if (debugger)
+          Serial.println("getting new weather");
+        drawWeather();
+        //syncNtpTime();
+      }
+
+      if (currentTime.Hour % NTP_TIMER == 0 && currentTime.Minute == 0) { //Sync NTP
+        if (debugger)
+          Serial.println("Getting new NTP time");
+        syncNtpTime();
+      }
+
+    } else { //Not time to sync, show cached weather
       if (debugger)
         Serial.println("showing cached weather");
       showCached = true;
       drawWeather();
     }
+
     if (runOnce) {
       //this is a SILLY workaround to prevent the watchy from getting stuck in a loop
-      //from running connectWiFI too early. I mean, is it silly if it works? XD
-      if (debugger) {
-        Serial.println("getting RTC weather");
-        Serial.println("2 Second Delay :(");
-      }
-
+      //when checking the weather too quickly. I mean, is it silly if it works? XD
+      if (debugger)
+        Serial.println("getting RTC weather first");
+      delayedStart = true; //Sync on next tick
+      runOnce = false;
       drawWeather();
-      delay(20000);
-      delayedStart = true;
     }
-  } else {
-    //Weather Updates Paused
+
+  } else { //Live updates disabled, show RTC temp and icon
     if (debugger)
       Serial.println("Weather Paused, getting RTC Temp");
     drawWeather();
   }
 
   drawWeatherIcon();
+  disableWiFi();
 
-  if (debugger) {
-    Serial.println("last runOnce: " + String(runOnce));
-    Serial.println("delayedStart: " + String(delayedStart));
-  }
-
-  //another silly work around for reducing ghosting
+  //another silly work around to help reduce ghosting
   for (int i = 0; i < 3; i++) {
     display.display(true);
   }

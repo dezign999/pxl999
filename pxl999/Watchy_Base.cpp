@@ -1,18 +1,16 @@
 //Derived from peerdavid's source at: https://github.com/peerdavid/Watchy
 #include "Watchy_Base.h"
+#include "wifi999.h"
 
-#define NTP_TIMER 12
-
+RTC_DATA_ATTR weatherData latestWeather;
 RTC_DATA_ATTR bool twelve_mode = true;
 RTC_DATA_ATTR bool sleep_mode = false;
-RTC_DATA_ATTR bool runOnce = true;
-RTC_DATA_ATTR bool delayedStart = false;
-RTC_DATA_ATTR bool firstNTP = true;
+
+RTC_DATA_ATTR int8_t temperature;
+RTC_DATA_ATTR int16_t weatherConditionCode;
 
 //Set this flag to true if you want to monitor Serial logs
 RTC_DATA_ATTR bool debugger = false;
-
-RTC_DATA_ATTR weatherData latestWeather;
 
 WatchyBase::WatchyBase() {}
 
@@ -24,8 +22,7 @@ void WatchyBase::init() {
   wakeup_reason = esp_sleep_get_wakeup_cause(); //get wake up reason
   Wire.begin(SDA, SCL); //init i2c
 
-  switch (wakeup_reason)
-  {
+  switch (wakeup_reason) {
     case ESP_SLEEP_WAKEUP_EXT0: //RTC Alarm
 
       // Handle classical tick
@@ -207,6 +204,7 @@ void WatchyBase::_bmaConfig() {
   // It corresponds to isDoubleClick interrupt
   //sensor.enableWakeupInterrupt();
 }
+
 uint16_t WatchyBase::_readRegister(uint8_t address, uint8_t reg, uint8_t *data, uint16_t len) {
   Wire.beginTransmission(address);
   Wire.write(reg);
@@ -226,19 +224,44 @@ uint16_t WatchyBase::_writeRegister(uint8_t address, uint8_t reg, uint8_t *data,
   return (0 !=  Wire.endTransmission());
 }
 
+bool WatchyBase::noAlpha(String str) { //Check if the city name is an ID code or a text name
+  for (int i = 0; i < str.length(); i++)
+    if (str[i] >= '0' && str[i] <= '9') {
+      return true;
+    } else {
+      return false;
+    }
+}
+
+int WatchyBase::rtcTemp() {
+  temperature = RTC.temperature() / 4; //celsius
+  if (strcmp(TEMP, "imperial") == 0) {
+    temperature = temperature * 9. / 5. + 32.; //fahrenheit
+  }
+  if (debugger)
+    Serial.println("rtcTemp(): " + String(temperature));
+  return temperature;
+}
+
 weatherData WatchyBase::getWeather() {
 
-  if (!runOnce && connectWiFi()) { //Use Weather API for live data if WiFi is connected
+  if (WiFi.status() != WL_CONNECTED)
+    connectWiFi();
+
+  if (WiFi.status() == WL_CONNECTED) { //Use Weather API for live data if WiFi is connected
+
     HTTPClient http;
     http.setConnectTimeout(3000);//3 second max timeout
 
-    // Determine the correct weather query URL, based on configuration
-    String weatherQueryURL = (strcmp (CITY_ID, "numbersHere") != 0) ? String(URL) + String("?id=") + String(CITY_ID)
-                             : String(URL) + String("?q=") + String(CITY) + String(",") + String(COUNTRY);
+    String weatherQueryURL = (noAlpha(getCityName())) ? String(URL) + String("?id=") + String(getCityName())
+                             : String(URL) + String("?q=") + String(getCityName()) + String(",") + String(COUNTRY);
     weatherQueryURL = weatherQueryURL + String("&units=") + String(TEMP) + String("&appid=") + String(APIKEY);
 
-    if (debugger)
+    if (debugger) {
+      Serial.print("CITY NAME OR ID: ");
+      Serial.println(noAlpha(getCityName()) ? "ID" : "NAME");
       Serial.println("weatherQueryURL=" + weatherQueryURL);
+    }
 
     http.begin(weatherQueryURL.c_str());
     int httpResponseCode = http.GET();
@@ -248,68 +271,64 @@ weatherData WatchyBase::getWeather() {
       latestWeather.temperature = int(responseObject["main"]["temp"]);
       latestWeather.weatherConditionCode = int(responseObject["weather"][0]["id"]);
 
-      if (firstNTP || currentTime.Hour % NTP_TIMER == 0 && currentTime.Minute == 0) {
-        syncNtpTime();
-        if (debugger) {
-          Serial.println("Initial NTP Sync");
-          Serial.println("firstNTP: " + String(firstNTP));
-        }
-        firstNTP = false;
-      }
-
     } else {
       //http error
     }
 
     http.end();
-    //turn off radios
 
-  } else if (!WIFI_CONFIGURED) {
+  } else {
     //No WiFi, use RTC Temperature
-    if (debugger)
-      Serial.println("No WiFi, getting RTC Temp");
-    uint8_t temperature = RTC.temperature() / 4; //celsius
-    if (strcmp(TEMP, "imperial") == 0) {
-      temperature = temperature * 9. / 5. + 32.; //fahrenheit
-    }
-    if (firstNTP)
-      firstNTP = false;
+    temperature = rtcTemp();
     latestWeather.temperature = temperature;
-    latestWeather.weatherConditionCode = 999;
+    if (debugger) {
+      Serial.println("No WiFi, getting RTC Temp");
+      Serial.println("latestWeather.temperature: " + String(latestWeather.temperature));
+    }
+    weatherConditionCode = 999;
+    latestWeather.weatherConditionCode = weatherConditionCode;
+    cityNameID = 999;
   }
-  //turn off radios
-  WiFi.mode(WIFI_OFF);
-  WIFI_CONFIGURED = false;
-  btStop();
-  if (debugger)
-    Serial.println("WiFi Check IP if still running: " + String(WiFi.localIP()));
 
   return latestWeather;
 }
 
-//Derived from Symptym's snippet posted to the Watchy Discord
+//NTP derived from a mashup of Symptym's snippet posted to the Watchy Discord
 //https://gist.github.com/Symptym/0336f3f3d74dc66fe05e8d232bed3704
+//and help fron Aliceafterall's NTP example: https://github.com/aliceafterall/Watchy/
 void WatchyBase::syncNtpTime() {
 
-  if (WIFI_CONFIGURED) {
+  if (WiFi.status() != WL_CONNECTED)
+    connectWiFi();
+
+  if (WiFi.status() == WL_CONNECTED) {
 
     if (debugger)
       Serial.println("Checking NTP time");
-    configTzTime(TIMEZONE_STRING, NTP_SERVER_1, NTP_SERVER_2, NTP_SERVER_3);
-    int i = 0;
-    while (time(nullptr) < 1000000000l && i < 40) {
-      delay(500);
-      i++;
-      if (debugger && i >= 40)
-        Serial.println("While i count: 40");
-    }
-    time_t tnow = time(nullptr);
-    struct tm *local = localtime(&tnow);
+    bool syncFailed = false;
 
-    if (time(nullptr) > 1000000000l) {
+    configTime(0, 0, NTP_SERVER_1, NTP_SERVER_2);
+    setenv("TZ", TIMEZONE_STRING, 1);
+
+    int i = 0;
+    while (!sntp_get_sync_status() == SNTP_SYNC_STATUS_COMPLETED && i < 10) {
+      if (debugger)
+        Serial.print(".");
+      delay(1000);
+      i++;
+      if (i == 10) {
+        if (debugger)
+          Serial.println("\nFailed to sync");
+        syncFailed = true;
+      }
+    }
+
+    if (!syncFailed) {
+      time_t tnow = time(nullptr);
+      struct tm *local = localtime(&tnow);
+
       if (debugger) {
-        Serial.println("nullptr > 10000000001");
-        Serial.println("NTP Retrieved");
+        Serial.println("\nNTP Retrieved");
         Serial.print("Date: ");
         Serial.print(local->tm_year + 1900);
         Serial.print("-");
@@ -340,6 +359,7 @@ void WatchyBase::syncNtpTime() {
         Serial.print("Week Day: ");
         Serial.println(local->tm_wday);
       }
+      
       currentTime.Year = local->tm_year + YEAR_OFFSET - 2000; //This change matches watchy defaults
       currentTime.Month = local->tm_mon + 1;
       currentTime.Day = local->tm_mday;
@@ -349,25 +369,12 @@ void WatchyBase::syncNtpTime() {
       currentTime.Wday = local->tm_wday + 1;
       RTC.write(currentTime);
       RTC.read(currentTime);
-      if (debugger) {
+      
+      if (debugger)
         Serial.println("NTP Sync Done");
-        Serial.println("firstNTP: " + String(firstNTP));
-      }
+
     } else {
-      if (debugger) {
-        Serial.println("NTP Sync Failed");
-      }
+      Serial.println("NTP Sync Failed");
     }
-
   }
-
-  //Turn off radios
-  WiFi.mode(WIFI_OFF);
-  WIFI_CONFIGURED = false;
-  btStop();
-  if (debugger)
-    Serial.println("WiFi Check: " + WiFi.localIP());
-  if (firstNTP)
-    firstNTP = false;
-  showWatchFace(true);
 }

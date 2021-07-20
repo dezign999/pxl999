@@ -9,25 +9,21 @@
 #endif
 
 extern RTC_DATA_ATTR bool twelve_mode;
-extern RTC_DATA_ATTR bool runOnce;
-extern RTC_DATA_ATTR bool delayedStart;
-extern RTC_DATA_ATTR bool firstNTP;
+
 extern RTC_DATA_ATTR bool debugger;
 extern RTC_DATA_ATTR weatherData latestWeather;
+extern RTC_DATA_ATTR char city;
+extern RTC_DATA_ATTR String cityName;
+extern RTC_DATA_ATTR int cityNameID;
+extern RTC_DATA_ATTR int8_t temperature;
+extern RTC_DATA_ATTR int16_t weatherConditionCode;
 
 //weather api - Update these to match your city/country/api key
 //get your free api key from: https://openweathermap.org/appid
-#define CITY "WADING+RIVER" //if your city name has a space, replace with '+'
 #define COUNTRY "US"
 #define APIKEY "f058fe1cad2afe8e2ddc5d063a64cecb" //use your own API key (this is SQFMI'S) :)
 #define URL "http://api.openweathermap.org/data/2.5/weather"
 #define TEMP "imperial" //use "imperial" for Fahrenheit or "metric" for Celcius
-
-// If your city name isn't very unique, you can use its ID instead.
-// When you look up a city on openweathermap.org, it'll take you to a page like
-// "https://openweathermap.org/city/4574324". Copy those numbers (ex 4574324) on the end
-// and put them into CITY_ID between the quotes where it says numbersHere.
-#define CITY_ID "numbersHere"
 
 //NTP Syncing - updates your time twice a day to fix any drifting
 //Get your timezone from: https://github.com/nayarsystems/posix_tz_db/blob/master/zones.json
@@ -53,6 +49,12 @@ class WatchyBase : public Watchy {
         esp_sleep_wakeup_cause_t wakeup_reason;
         weatherData getWeather();
         void syncNtpTime();
+        bool connectWiFi();
+        void disableWiFi();
+        bool noAlpha(String str);
+        String getCityName();
+        String getCityAbbv();
+        int rtcTemp();
     private:
         void _rtcConfig();
         void _bmaConfig();
