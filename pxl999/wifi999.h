@@ -77,8 +77,8 @@ bool WatchyBase::connectWiFi() {
       Serial.println(F("\nWiFi connected, your IP address is "));
       Serial.println(WiFi.localIP());
       Serial.println(cityNames[n]);
-      cityNameID = n;
     }
+    cityNameID = n;
     WIFI_CONFIGURED = true;
   } else {
     WIFI_CONFIGURED = false;
