@@ -7,7 +7,7 @@ When internet access is not available, the RTC will be used for ambient temperat
 
 This watch face was made using the free Arduino IDE, Photoshop CC, image2ccp, Glypher Studio (font creation), Cloud Convert (otf > ttf), and truetype2gfx.
 
-I'm still relatively new to C++ (and rusty), so please excuse the mess. I've taken a lot of David Peer's code from his examples and borrowed much of Symptym's NTP time syncing code.
+I'm still relatively new to C++ (and rusty), so please excuse the mess. I've taken a lot of David Peer's code from his examples and borrowed much of Symptym's & Aliceafterall's NTP time syncing code.
 
 Please note, that this works on my watchy, your results may vary :P I had a real problem with the watchy crashing if I polled for weather too early at boot, therefore I put a workaround in by forcing a delay and just showing RTC temperature at first boot. If you find a way to fix this, please lmk!
 
