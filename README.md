@@ -37,7 +37,7 @@ It's possible to pause weather updates when the watch is not in use, i.e. when y
 
 When updates are paused, the weather icon will be represented by a sleeping RTC icon and ambient temperature will be used instead of live weather.
 
-## NTP
+### NTP
 #### Timezone
 NTP syncs require that you define your timezone, `TIMEZONE_STRING` which can be found [using this resource link](https://github.com/nayarsystems/posix_tz_db/blob/master/zones.json). Use the example in the source to determine what is required. 
 
@@ -46,3 +46,6 @@ By default, the NTP server tried first is a pool of servers that should automati
 
 #### Syncing
 NTP Syncs happen twice a day, once at Noon and once at Midnight. This can be changed by modifying `NTP_TIMER`.
+
+### Pause Live Updates
+By default, pxl999 is set to pause live weather and NTP updates to conserve battery life at 12:30am, `pauseStart = "0:30"`, and resume updates at 5:45am, `pauseEnd = "5:45"`. These settings can be set accordingly. When updates are paused, the RTC will be used for ambient temperature.
