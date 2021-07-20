@@ -30,7 +30,7 @@ If the city name is used in other states or provinces, you can also use the city
 Laslty, You'll also have to define `COUNTRY` and `TEMP`. `TEMP` is used to determine if Imperial temperature is displayed, use "Imperial" or "Metric".
 
 #### City Abbreviation
-You can define abbreviated city names or locations for each of your defined wifi access points. These abbreviations have a max of four letters or numbers and are defined as follows: `cityAbbv[] = {"HOME", "GPT" , "PHNE"}`.
+You can define abbreviated city names or locations for each of your defined wifi access points. These abbreviations appear above the weather icon, have a max of four letters or numbers and are defined as follows: `cityAbbv[] = {"HOME", "GPT" , "PHNE"}`.
 
 #### Pausing Weather Updates
 It's possible to pause weather updates when the watch is not in use, i.e. when you're sleeping. By default, its set to pause 30 minutes after midnight, and resume updates at 5:30am. These can be changed by modifying the `pauseStart` and `pauseEnd` strings. Setting both strings to the same time will disable the pause updates feature. Pause start and end times must be written in the 24 hour format.
