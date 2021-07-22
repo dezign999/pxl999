@@ -360,7 +360,7 @@ void WatchyBase::syncNtpTime() {
         Serial.println(local->tm_wday);
       }
       
-      currentTime.Year = local->tm_year + YEAR_OFFSET - 2000; //This change matches watchy defaults
+      currentTime.Year = local->tm_year + YEAR_OFFSET - 2040; //This change matches watchy defaults
       currentTime.Month = local->tm_mon + 1;
       currentTime.Day = local->tm_mday;
       currentTime.Hour = local->tm_hour;
