@@ -193,7 +193,7 @@ void WatchyPXL999::drawWatchFace() {
   drawTime();
   drawDate();
 
-  if (!pauseUpdates()) { //Check if live updates aren't paused
+  if (!pauseUpdates() && !runOnce) { //Check if live updates aren't paused
 
     if (delayedStart) { //Sync Weather & NTP on second Tick to avoid crashing Watchy on first launch
       delayedStart = false;
@@ -228,24 +228,29 @@ void WatchyPXL999::drawWatchFace() {
       drawWeather();
     }
 
+  } else { //Live updates disabled, show RTC temp and icon
     if (runOnce) {
       //this is a SILLY workaround to prevent the watchy from getting stuck in a loop
       //when checking the weather too quickly. I mean, is it silly if it works? XD
+      if ((startMillis - millis()) >= 3000) {
+        runOnce = false; //Sync on next tick
+      }
+      delayedStart = true;
       if (debugger)
         Serial.println("getting RTC weather first");
-      delayedStart = true; //Sync on next tick
-      runOnce = false;
+      drawWeather();
+      if (debugger)
+        Serial.println("Waiting for delayed start, elapsed millis: " + String(millis()));
+    } else {
+      if (debugger)
+        Serial.println("Weather Paused, getting RTC Temp");
       drawWeather();
     }
-
-  } else { //Live updates disabled, show RTC temp and icon
-    if (debugger)
-      Serial.println("Weather Paused, getting RTC Temp");
-    drawWeather();
   }
 
   drawWeatherIcon();
-  disableWiFi();
+  if (WiFi.status() == WL_CONNECTED)
+    disableWiFi();
 
   //another silly work around to help reduce ghosting
   for (int i = 0; i < 3; i++) {

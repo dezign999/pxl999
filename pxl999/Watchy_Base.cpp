@@ -8,6 +8,9 @@ RTC_DATA_ATTR bool sleep_mode = false;
 
 RTC_DATA_ATTR int8_t temperature;
 RTC_DATA_ATTR int16_t weatherConditionCode;
+RTC_DATA_ATTR unsigned long startMillis;
+
+uint16_t ambientOffset = 11.; //This varies for every RTC. Mine runs 11° F hotter than outside the watch.
 
 //Set this flag to true if you want to monitor Serial logs
 RTC_DATA_ATTR bool debugger = false;
@@ -15,6 +18,8 @@ RTC_DATA_ATTR bool debugger = false;
 WatchyBase::WatchyBase() {}
 
 void WatchyBase::init() {
+  
+  startMillis = millis();
 
   if (debugger)
     Serial.begin(115200);
@@ -236,7 +241,7 @@ bool WatchyBase::noAlpha(String str) { //Check if the city name is an ID code or
 int WatchyBase::rtcTemp() {
   temperature = RTC.temperature() / 4; //celsius
   if (strcmp(TEMP, "imperial") == 0) {
-    temperature = temperature * 9. / 5. + 32.; //fahrenheit
+    temperature = (temperature * 9. / 5. + 32.) - ambientOffset; //fahrenheit
   }
   if (debugger)
     Serial.println("rtcTemp(): " + String(temperature));

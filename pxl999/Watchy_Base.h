@@ -15,6 +15,7 @@ extern RTC_DATA_ATTR weatherData latestWeather;
 extern RTC_DATA_ATTR char city;
 extern RTC_DATA_ATTR String cityName;
 extern RTC_DATA_ATTR int cityNameID;
+extern RTC_DATA_ATTR unsigned long startMillis;
 extern RTC_DATA_ATTR int8_t temperature;
 extern RTC_DATA_ATTR int16_t weatherConditionCode;
 
